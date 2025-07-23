@@ -12,6 +12,7 @@
   "description": "",
   "dependencies": {
     "inquire": "^0.4.8",
-    "inquirer": "^12.8.2"
+    "inquirer": "^12.8.2",
+    "lodash": "^4.17.21"
   }
 }
