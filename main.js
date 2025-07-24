@@ -1,5 +1,5 @@
 import mostrarMenu from './helpers/menu.js';
-import { listarTareas, agregarTarea, editarTarea, eliminarTarea } from './controllers/tareasController.js';
+import { listarTareas, agregarTarea, editarTarea, eliminarTarea, buscarTareas } from './controllers/tareasController.js';
 
 async function main() {
   let salir = false;
@@ -12,7 +12,7 @@ async function main() {
         await agregarTarea();
         break;
       case '2':
-        listarTareas();
+        await listarTareas();
         break;
       case '3':
         await editarTarea();
@@ -21,6 +21,9 @@ async function main() {
         await eliminarTarea();
         break;
       case '5':
+        await buscarTareas();
+        break;
+      case '0':
         salir = true;
         console.log('👋 ¡Hasta pronto!');
         break;
