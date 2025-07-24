@@ -1,13 +1,14 @@
 import inquirer from 'inquirer';
-import fs from 'fs/promises';
 import _ from 'lodash';
-import { tareas } from '../models/tareas.js';
 import chalk from 'chalk'
+import { connection } from '../persistence/db.js';
 
 
 const RUTA = './data/tareas.json';
 
 export async function agregarTarea() {
+  const db = await connection();
+  const coleccion = db.collection("tareas");
   const { descripcion } = await inquirer.prompt([
     { type: 'input', name: 'descripcion', message: 'Descripción de la tarea:' }
   ]);
@@ -18,32 +19,28 @@ export async function agregarTarea() {
   }
 
   const nueva = {
-    id: _.uniqueId(),
     descripcion: descripcion.trim(),
     completada: false
   };
 
   
 
-  tareas.push(nueva);
-
-  try {
-    await fs.writeFile(RUTA, JSON.stringify(tareas, null, 4));
-    console.log(chalk.green.bold('✅ Tarea agregada.'));
-  } catch (error) {
-    console.error('Error:', error);
-  }
+  await coleccion.insertOne(nueva);
+  console.log(chalk.green.bold('✅ Tarea agregada.'));
 }
 
 
 
 
 export async function listarTareas() {
+  const db = await connection();
+  const coleccion = db.collection("tareas");
+  const tareas = await coleccion.find().toArray()
   if (tareas.length === 0) {
     console.log('📭 No hay tareas registradas.');
     return;
   }
-
+  
   const tareasOrdenadas = _.orderBy(tareas, ['descripcion', 'completada'], ['asc', 'asc']);
 
   console.log(chalk.magenta.bold('\n📋 Lista de tareas:'));
@@ -57,7 +54,9 @@ export async function buscarTareas() {
   const { palabraClave } = await inquirer.prompt([
     { type: 'input', name: 'palabraClave', message: 'Ingresa palabra clave para buscar:' }
   ]);
-
+  const db = await connection();
+  const coleccion = db.collection("tareas");
+  const tareas = await coleccion.find().toArray()
   const tareasFiltradas = _.filter(tareas, tarea =>
     _.includes(tarea.descripcion.toLowerCase(), palabraClave.toLowerCase())
   );
@@ -75,6 +74,9 @@ export async function buscarTareas() {
 }
 
 export async function editarTarea() {
+  const db = await connection();
+  const coleccion = db.collection("tareas");
+  const tareas = await coleccion.find().toArray()
   if (tareas.length === 0) {
     console.log('⚠️ No hay tareas para editar.');
     return;
@@ -107,20 +109,18 @@ export async function editarTarea() {
     return;
   }
 
-
-
-  tareas[indice].descripcion = nuevaDescripcion.trim();
-  tareas[indice].completada = completada;
-
-  try {
-    await fs.writeFile(RUTA, JSON.stringify(tareas, null, 4));
-    console.log('✏️ Tarea actualizada.');
-  } catch (error) {
-    console.error('Error:', error);
-  }
+  const descripcion = tareas[indice].descripcion
+  await coleccion.updateOne({descripcion: descripcion}, {$set: {descripcion: nuevaDescripcion.trim(), completada: completada}});
+  console.log('✏️ Tarea actualizada.');
 }
 
+
+
+
 export async function eliminarTarea() {
+  const db = await connection();
+  const coleccion = db.collection("tareas");
+  const tareas = await coleccion.find().toArray()
   if (tareas.length === 0) {
     console.log('No hay tareas para eliminar.');
     return;
@@ -152,11 +152,6 @@ export async function eliminarTarea() {
     return;
   }
 
-  tareas.splice(indice, 1);
-  try {
-    await fs.writeFile(RUTA, JSON.stringify(tareas, null, 4));
-    console.log(chalk.green.bold('🗑️ Tarea eliminada.'));
-  } catch (error) {
-    console.error('Error:', error);
-  }
+  await coleccion.deleteOne( {descripcion: tareas[indice].descripcion} )
+  console.log(chalk.green.bold('🗑️ Tarea eliminada.'));
 }
